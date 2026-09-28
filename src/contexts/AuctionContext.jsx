@@ -179,18 +179,20 @@ export const AuctionProvider = ({ children }) => {
 
   const startAuction = useCallback(async (roomId, options = {}) => {
     const botsEnabled = options.botsEnabled !== false; // default true
-    // Order: sets fixed, within each set grouped by role category
-    // Batsmen → All-Rounders → Wicket-Keepers → Bowlers (each group shuffled)
-    const ROLE_ORDER = ['Batsman', 'All-Rounder', 'Wicket-Keeper', 'Bowler'];
-    const sets = [...new Set(IPL_PLAYERS.map(p => p.set))];
+    // Set order: Set 3 first → Marquee Set 1 → remaining sets in original order
+    // Within each set: players shuffled randomly (no role grouping)
+    const allSets = [...new Set(IPL_PLAYERS.map(p => p.set))];
+    const orderedSets = [
+      'Set 3',
+      'Marquee Set 1',
+      ...allSets.filter(s => s !== 'Set 3' && s !== 'Marquee Set 1'),
+    ];
     let randomizedIndices = [];
-    sets.forEach(setName => {
-      ROLE_ORDER.forEach(role => {
-        const roleIndices = IPL_PLAYERS
-          .map((p, i) => (p.set === setName && p.role === role) ? i : -1)
-          .filter(i => i !== -1);
-        randomizedIndices = [...randomizedIndices, ...shuffleArray(roleIndices)];
-      });
+    orderedSets.forEach(setName => {
+      const setIndices = IPL_PLAYERS
+        .map((p, i) => p.set === setName ? i : -1)
+        .filter(i => i !== -1);
+      randomizedIndices = [...randomizedIndices, ...shuffleArray(setIndices)];
     });
 
     const rtdbRoomRef = ref(rtdb, `auctions/${roomId}/room`);
