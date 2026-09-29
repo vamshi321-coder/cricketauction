@@ -509,22 +509,12 @@ const Lobby = () => {
       {isJoined && currentAuction?.status !== 'active' && (
         <div className="w-full max-w-6xl px-2 sm:px-4 mb-3">
           <button
-            onClick={() => setShowChoosePlayers(true)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all border ${
-              myPoolCount > 0
-                ? 'bg-orange-500/20 border-orange-500/40 text-orange-400 shadow-[0_0_12px_rgba(255,85,0,0.2)]'
-                : 'bg-white/5 border-white/10 text-gray-400 hover:border-orange-500/30 hover:text-white'
-            }`}
+            disabled
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-widest border bg-white/[0.02] border-white/5 text-gray-700 cursor-not-allowed opacity-40"
           >
             <ListIcon size={13} />
             Choose Players
-            {myPoolCount > 0 ? (
-              <span className="bg-orange-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
-                {myPoolCount} selected
-              </span>
-            ) : (
-              <span className="text-gray-600 text-[8px] font-bold normal-case tracking-normal">All players (default)</span>
-            )}
+            <span className="text-gray-700 text-[8px] font-bold normal-case tracking-normal">Coming soon</span>
           </button>
         </div>
       )}

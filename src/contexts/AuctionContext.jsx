@@ -179,14 +179,13 @@ export const AuctionProvider = ({ children }) => {
 
   const startAuction = useCallback(async (roomId, options = {}) => {
     const botsEnabled = options.botsEnabled !== false; // default true
-    // Set order: Set 3 first → Marquee Set 1 → remaining sets in original order
-    // Within each set: players shuffled randomly (no role grouping)
+    // First 4 sets (Marquee Set 1, Set 1, Set 2, Set 3) are shuffled randomly in order.
+    // Players within each set are also shuffled. Remaining sets stay in fixed position.
+    const SHUFFLE_SETS = ['Marquee Set 1', 'Set 1', 'Set 2', 'Set 3'];
     const allSets = [...new Set(IPL_PLAYERS.map(p => p.set))];
-    const orderedSets = [
-      'Set 3',
-      'Marquee Set 1',
-      ...allSets.filter(s => s !== 'Set 3' && s !== 'Marquee Set 1'),
-    ];
+    const remainingSets = allSets.filter(s => !SHUFFLE_SETS.includes(s));
+    const shuffledFirst4 = shuffleArray([...SHUFFLE_SETS]);
+    const orderedSets = [...shuffledFirst4, ...remainingSets];
     let randomizedIndices = [];
     orderedSets.forEach(setName => {
       const setIndices = IPL_PLAYERS

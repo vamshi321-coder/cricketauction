@@ -426,21 +426,43 @@ const AuctionRoom = () => {
       lastBeepedSecRef.current = -1;
       countdownSoundPlayedRef.current = false;
 
+      // Stop any playing countdown sound immediately when timer resets (new bid came in)
+      try {
+         if (countdownSoundRef.current) {
+            countdownSoundRef.current.pause();
+            countdownSoundRef.current.currentTime = 0;
+         }
+      } catch (e) {}
+
       const interval = setInterval(() => {
          const rawMs = displayAuctionState.timerEndsAt - getSyncedTime();
          const diff = Math.max(0, Math.ceil(rawMs / 1000));
 
-         // 5-second countdown warning sound — plays once when timer hits 4
-         if (diff <= 4 && diff > 0 && !countdownSoundPlayedRef.current && audioUnlocked) {
-            countdownSoundPlayedRef.current = true;
-            try {
-               if (!countdownSoundRef.current) {
-                  countdownSoundRef.current = new Audio('/countdown-timer-4s.mp3');
-                  countdownSoundRef.current.volume = 0.7;
-               }
-               countdownSoundRef.current.currentTime = 0;
-               countdownSoundRef.current.play().catch(() => {});
-            } catch (e) {}
+         // Countdown warning sound — starts at 4 sec, stops if timer goes above 4
+         if (diff <= 4 && diff > 0 && audioUnlocked) {
+            // Start sound if not already playing
+            if (!countdownSoundPlayedRef.current) {
+               countdownSoundPlayedRef.current = true;
+               try {
+                  if (!countdownSoundRef.current) {
+                     countdownSoundRef.current = new Audio('/countdown-timer-4s.mp3');
+                     countdownSoundRef.current.volume = 0.7;
+                  }
+                  countdownSoundRef.current.currentTime = 0;
+                  countdownSoundRef.current.play().catch(() => {});
+               } catch (e) {}
+            }
+         } else if (diff > 4) {
+            // Timer went back above 4 (new bid) — stop sound immediately
+            if (countdownSoundPlayedRef.current) {
+               countdownSoundPlayedRef.current = false;
+               try {
+                  if (countdownSoundRef.current) {
+                     countdownSoundRef.current.pause();
+                     countdownSoundRef.current.currentTime = 0;
+                  }
+               } catch (e) {}
+            }
          }
 
          if (diff <= 5 && diff > 0 && diff !== lastBeepedSecRef.current) {
@@ -465,7 +487,17 @@ const AuctionRoom = () => {
          }
       }, 200);
 
-      return () => clearInterval(interval);
+      return () => {
+         clearInterval(interval);
+         // Also stop sound when effect cleans up (timer reset by new bid)
+         try {
+            if (countdownSoundRef.current) {
+               countdownSoundRef.current.pause();
+               countdownSoundRef.current.currentTime = 0;
+            }
+         } catch (e) {}
+         countdownSoundPlayedRef.current = false;
+      };
    }, [displayAuctionState?.timerEndsAt, displayAuctionState?.status, currentAuction?.status, isAdmin, id, endPlayerAuction, getSyncedTime, audioUnlocked]);
 
    const handleBid = async () => {
