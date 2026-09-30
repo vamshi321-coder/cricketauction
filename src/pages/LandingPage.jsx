@@ -25,8 +25,6 @@ import {
   GitBranchPlusIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import GithubStarButton from '../components/GithubStarButton';
-import BuyMeACoffee from '../components/BuyMeACoffee';
 import AuctionActivityFeed from '../components/AuctionActivityFeed';
 import Footer from '../components/Footer';
 
@@ -278,8 +276,6 @@ const LandingPage = () => {
         animate="visible"
         className="relative min-h-screen bg-[#050505] flex flex-col items-center justify-center py-10 px-4 font-sans text-white overflow-x-hidden"
       >
-        <GithubStarButton />
-        <BuyMeACoffee />
 
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-orange-600/20 blur-[120px] rounded-full" />
@@ -446,8 +442,6 @@ const LandingPage = () => {
       animate="visible"
       className="relative min-h-screen bg-[#050505] flex flex-col items-center justify-center py-10 px-4 font-sans text-white overflow-x-hidden"
     >
-      <GithubStarButton />
-      <BuyMeACoffee />
 
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-orange-600/20 blur-[120px] rounded-full" />
