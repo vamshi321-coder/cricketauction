@@ -77,21 +77,7 @@ const Footer = () => {
         <div className="col-span-1 sm:col-span-6 md:col-span-3 space-y-4">
           <h4 className="text-[10px] font-black text-gray-600 uppercase tracking-[0.3em]">Developer</h4>
           <div className="space-y-2">
-            <a
-              href="https://shaurya-upadhyay.me"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block group"
-            >
-              <span className="text-xs font-black text-gray-400 group-hover:text-white transition-colors uppercase tracking-widest block">
-                Shaurya Upadhyay
-              </span>
-              <span className="text-[9px] font-bold text-gray-600 uppercase tracking-widest block">
-                Full-Stack Engineer
-              </span>
-            </a>
-
-            <div className="pt-3 border-t border-white/5 mt-3">
+            <div className="pt-0">
               <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Modified & Further Developed by</span>
               <span className="text-sm font-black text-orange-400 uppercase tracking-widest block mt-0.5">Vamshi Nakkala</span>
               <a
@@ -121,11 +107,19 @@ const Footer = () => {
         <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest text-center sm:text-left leading-relaxed">
           &copy; {currentYear} IPL Auction Hub. All rights reserved. 🏏
         </p>
-        <div className="flex items-center gap-2.5">
-          <ShieldCheck size={12} className="text-[#ff5500]/70" />
-          <span className="text-[9px] font-black text-gray-600 uppercase tracking-[0.2em] leading-none">
-            Secure Realtime Sync Enabled
-          </span>
+        <div className="flex items-center gap-4">
+          <a
+            href="/terms"
+            className="text-[9px] font-black text-gray-600 hover:text-orange-400 uppercase tracking-widest transition-colors"
+          >
+            Legal &amp; Terms
+          </a>
+          <div className="flex items-center gap-2.5">
+            <ShieldCheck size={12} className="text-[#ff5500]/70" />
+            <span className="text-[9px] font-black text-gray-600 uppercase tracking-[0.2em] leading-none">
+              Secure Realtime Sync Enabled
+            </span>
+          </div>
         </div>
       </div>
     </footer>

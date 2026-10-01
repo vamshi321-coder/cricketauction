@@ -411,9 +411,14 @@ const AuctionRoom = () => {
    const countdownSoundRef = useRef(null);
    const countdownSoundPlayedRef = useRef(false);
 
-   // Reset the end-trigger lock whenever a new player starts or timer resets (new bid)
+   // Reset end-trigger lock ONLY on new player (not on every bid/timerEndsAt change)
+   // Resetting on timerEndsAt caused duplicate endPlayerAuction calls on each bid
    useEffect(() => {
       endTriggeredRef.current = false;
+   }, [displayAuctionState?.playerId]);
+
+   // Reset sound played ref on new bid OR new player
+   useEffect(() => {
       countdownSoundPlayedRef.current = false;
    }, [displayAuctionState?.playerId, displayAuctionState?.timerEndsAt]);
 
