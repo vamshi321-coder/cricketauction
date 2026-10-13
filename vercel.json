@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/voice-ice",
+      "destination": "/api/voice-ice"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "$roomId": {
+    "members": {
+      ".read": "auth != null && (root.child('auctions').child($roomId).child('room/hostId').val() == auth.uid || root.child('auctions').child($roomId).child('teams').child($roomId + '_' + auth.uid).child('userId').val() == auth.uid)",
+      "$uid": {
+        "$session": {
+          ".write": "auth != null && auth.uid == $uid && (!newData.exists() || (auth != null && (root.child('auctions').child($roomId).child('room/hostId').val() == auth.uid || root.child('auctions').child($roomId).child('teams').child($roomId + '_' + auth.uid).child('userId').val() == auth.uid)))",
+          ".validate": "newData.hasChildren(['name', 'muted', 'updatedAt'])",
+          "name": {
+            ".validate": "newData.isString() && newData.val().length <= 50"
+          },
+          "muted": {
+            ".validate": "newData.isBoolean()"
+          },
+          "updatedAt": {
+            ".validate": "newData.isNumber() && newData.val() <= now + 5000 && newData.val() >= now - 60000"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    },
+    "signals": {
+      ".read": "auth != null && (root.child('auctions').child($roomId).child('room/hostId').val() == auth.uid || root.child('auctions').child($roomId).child('teams').child($roomId + '_' + auth.uid).child('userId').val() == auth.uid)",
+      "$uid": {
+        "$session": {
+          ".write": "auth != null && auth.uid == $uid && (!newData.exists() || ((auth != null && (root.child('auctions').child($roomId).child('room/hostId').val() == auth.uid || root.child('auctions').child($roomId).child('teams').child($roomId + '_' + auth.uid).child('userId').val() == auth.uid)) && root.child('voiceRooms').child($roomId).child('members').child($uid).child($session).exists()))",
+          "$recipient": {
+            "$message": {
+              ".validate": "newData.hasChildren(['type', 'at'])",
+              "type": {
+                ".validate": "newData.val() == 'description' || newData.val() == 'candidate' || newData.val() == 'restart'"
+              },
+              "at": {
+                ".validate": "newData.isNumber() && newData.val() <= now + 5000 && newData.val() >= now - 60000"
+              },
+              "$other": {
+                ".validate": false
+              },
+              "description": {
+                "type": {
+                  ".validate": "newData.val() == 'offer' || newData.val() == 'answer'"
+                },
+                "sdp": {
+                  ".validate": "newData.isString() && newData.val().length <= 16000"
+                },
+                "$other": {
+                  ".validate": false
+                }
+              },
+              "candidate": {
+                "candidate": {
+                  ".validate": "newData.isString() && newData.val().length <= 2000"
+                },
+                "sdpMid": {
+                  ".validate": "newData.isString() && newData.val().length <= 100"
+                },
+                "sdpMLineIndex": {
+                  ".validate": "newData.isNumber()"
+                },
+                "usernameFragment": {
+                  ".validate": "newData.isString() && newData.val().length <= 256"
+                },
+                "$other": {
+                  ".validate": false
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,81 @@
+// Exercise the actual tournament button and arena. Firebase alone is mocked.
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {pathToFileURL} from 'node:url';
+import path from 'node:path';
+import fs from 'node:fs/promises';
+const project=process.cwd(),require=createRequire(path.join(project,'package.json'));
+const {build}=createRequire(require.resolve('vite/package.json'))('esbuild');
+const {JSDOM}=createRequire(path.join(process.env.PHASE3_QA_MODULES,'package.json'))('jsdom');
+const dom=new JSDOM('<div id="root"></div>',{url:'https://game.test/summary/TEST',pretendToBeVisual:true});
+for(const k of ['window','document','HTMLElement','Element','Node','SVGElement'])globalThis[k]=dom.window[k];
+Object.defineProperty(globalThis,'navigator',{value:dom.window.navigator,configurable:true});
+globalThis.requestAnimationFrame=dom.window.requestAnimationFrame.bind(dom.window);globalThis.cancelAnimationFrame=dom.window.cancelAnimationFrame.bind(dom.window);
+globalThis.IS_REACT_ACT_ENVIRONMENT=true;
+globalThis.__firebase={value:null,listeners:new Set(),writes:0};
+const output=path.join(project,'tmp/tournament-arena-test.mjs');await fs.mkdir(path.dirname(output),{recursive:true});
+await build({stdin:{contents:`import React,{act} from 'react';import {createRoot} from 'react-dom/client';import TournamentSeason from './src/components/TournamentSeason.jsx';import TournamentHub from './src/components/TournamentHub.jsx';import ErrorBoundary from './src/components/ErrorBoundary.jsx';export {React,act,createRoot,TournamentSeason,TournamentHub,ErrorBoundary};`,resolveDir:project,loader:'jsx'},outfile:output,bundle:true,platform:'node',format:'esm',define:{'import.meta.env.DEV':'false'},plugins:[{name:'offline-database',setup(b){b.onResolve({filter:/firebase\/database$|lib\/firebase$/},a=>({path:a.path,namespace:'mock'}));b.onLoad({filter:/.*/,namespace:'mock'},()=>({contents:`export const rtdb={};export const getServerTime=()=>123;export const ref=(_,p)=>p;export const onValue=(p,cb)=>{const f=globalThis.__firebase;const listener=()=>cb({val:()=>p.endsWith('/userSquads')?globalThis.__squads||{}:f.value});f.listeners.add(listener);listener();return()=>f.listeners.delete(listener);};export async function runTransaction(_,fn){const f=globalThis.__firebase;if(f.failNext){f.failNext=false;throw new Error('Connection interrupted');}const next=fn(f.value);if(next===undefined)return{committed:false};f.value=JSON.parse(JSON.stringify(next));f.writes++;for(const cb of f.listeners)cb({val:()=>f.value});return{committed:true};}` }));}}]});
+const {React,act,createRoot,TournamentSeason,TournamentHub,ErrorBoundary}=await import(pathToFileURL(output));
+const {buildTournamentTeams}=await import('../src/lib/tournamentTeams.js');
+const tournament=buildTournamentTeams();tournament.teams[0]={...tournament.teams[0],isAI:false,isHuman:true,userId:'host'};
+const props={auctionId:'TEST',user:{uid:'host'},tournament,currentAuction:{hostId:'host'}};
+const root=createRoot(document.getElementById('root'));const errors=[];const originalError=console.error;console.error=(...args)=>{errors.push(args.map(String).join(' '));};
+const click=async(label)=>{const b=[...document.querySelectorAll('button')].find(b=>b.textContent.trim().toLowerCase().includes(label.toLowerCase())||b.getAttribute('aria-label')===label);assert(b,`Missing button: ${label}; buttons: ${[...document.querySelectorAll('button')].map(b=>b.textContent.trim()).join(' | ')}`);assert(!b.disabled,`Disabled: ${label}`);await act(async()=>b.click());};
+const wait=async ms=>act(async()=>new Promise(r=>setTimeout(r,ms)));
+try{
+ await act(async()=>root.render(React.createElement(ErrorBoundary,null,React.createElement(TournamentSeason,props))));
+ await click('Start tournament');
+ assert(!/Team Approach|Toss Decision|won the toss/i.test(document.body.textContent));
+ await click('Confirm XI');await click('Play Your Match');
+ await click('Close match');
+ assert.equal(globalThis.__firebase.value.currentMatchday,1);
+ assert.equal(Object.keys(globalThis.__firebase.value.results || {}).length,0);
+ await click('Play Your Match');
+ if(process.argv.includes('--expect-crash')){
+  assert.match(document.body.textContent,/Arena Fault/);assert(errors.some(e=>e.includes('MatchArena is not defined')));
+  console.log('REPRODUCED: Start tournament → Confirm XI → Play Your Match throws ReferenceError: MatchArena is not defined and shows Arena Fault.');
+ }else{
+  assert(!document.body.textContent.includes('Arena Fault'),errors.join('\n'));
+  assert.match(document.body.textContent,/Call the coin/);
+  await click('Heads');await wait(1400);
+  const bat=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='🏏 Bat');if(bat)await act(async()=>bat.click());
+  await click('Start Match');await wait(250);
+  await click('Batting');await wait(400);
+  assert.match(document.body.textContent,/Yet to bat/);assert(!document.querySelector('.line-through'));
+  assert.equal((document.body.textContent.match(/0 \(0b\)/g)||[]).length,2);
+  await click('Bowling');await wait(400);
+  assert.equal((document.body.textContent.match(/0\/0/g)||[]).length,6);
+  for(const tab of ['Overs','Field']){await click(tab);await wait(400);}
+  await click('Full Over');await click('Attack');await click('Bowl Over');await wait(150);
+  await click('Skip Innings');await wait(400);
+  assert.match(document.body.textContent,/Innings Break/);
+  const continueButton=[...document.querySelectorAll('button')].find(b=>/Chase|Bowl Now|Continue|Second|2nd|Start/i.test(b.textContent));assert(continueButton,'innings break continue');await act(async()=>continueButton.click());await wait(200);
+  await click('Skip Innings');await wait(400);
+  assert(!document.body.textContent.includes('Arena Fault'),errors.join('\n'));
+  assert.match(document.body.textContent,/Play Again/);
+  const displayedSummary=[...document.querySelectorAll('p')].find(p=>/^[A-Z]+ won /.test(p.textContent))?.textContent;assert(displayedSummary,'result summary rendered');
+  const close=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Exit');assert(close,'match result return');
+  globalThis.__firebase.failNext=true;await act(async()=>close.click());
+  assert.equal(globalThis.__firebase.value.currentMatchday,1);assert.match(document.querySelector('[role=alert]').textContent,/Could not save/);
+  await act(async()=>close.click());
+  assert.equal(globalThis.__firebase.value.currentMatchday,2);
+  assert.equal(Object.keys(globalThis.__firebase.value.results).length,5);
+  assert(Object.values(globalThis.__firebase.value.results).some(r=>r.summary===displayedSummary),'played and saved result match');
+  assert(!document.body.textContent.includes('Arena Fault'),errors.join('\n'));
+  globalThis.__squads={host:{players:tournament.teams[0].playingXI}};
+  const hubProps={auctionId:'TEST',user:{uid:'host'},roomTeams:[{...tournament.teams[0],isAI:false,isHuman:true,userId:'host'}],currentAuction:{hostId:'host'}};
+  await act(async()=>root.render(React.createElement(TournamentHub,hubProps)));await wait(400);
+  const s=globalThis.__firebase.value;const expected=s.fixtures.find(f=>f.matchday===2&&[f.teamA,f.teamB].includes(tournament.teams[0].teamId));
+  const dayButton=[...document.querySelectorAll('button')].find(b=>/Matchday 2/.test(b.textContent));assert.match(dayButton.textContent,/Active/);
+  const card=dayButton.parentElement;assert(card.textContent.includes(expected.teamA)&&card.textContent.includes(expected.teamB),'Hub shows the exact saved Matchday 2 pairing');
+  assert.match(document.body.textContent,/MD 2/);
+  await click('Season');await wait(500);assert.match(document.body.textContent,/Matchday 2/);
+  const hero=[...document.querySelectorAll('p')].find(p=>p.textContent.trim()==='Your Match').parentElement;
+  assert(hero.textContent.includes(expected.teamA)&&hero.textContent.includes(expected.teamB),'Season and Hub agree');
+  assert(!/Team Approach|Toss Decision|won the toss/i.test(document.body.textContent));
+  console.log('PASS: Hub and Season Matchday 2 share saved fixtures and progress; no premature toss/approach; zero live stats; cancel keeps round; exact result saved.');
+  console.log('PASS: tournament start → XI → Play Your Match → toss → four match tabs → over playback → skip during playback → both innings → result → Matchday 2 with five saved match results.');
+ }
+ await act(async()=>root.unmount());assert.equal(globalThis.__firebase.listeners.size,0);
+}finally{console.error=originalError;dom.window.close();await fs.unlink(output);}
+process.exit(0);
