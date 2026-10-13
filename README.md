@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🏏 CricAuction
+# 🏏 CricketAuction
 ### *Real-Time Multiplayer Cricket Auction & Live Match Simulation Platform*
 
 [![React](https://img.shields.io/badge/React-19.2-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
